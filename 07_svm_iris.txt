@@ -1,0 +1,136 @@
+import pandas as pd
+import numpy as np
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report,
+    confusion_matrix
+)
+
+iris = load_iris()
+print("Dataset loaded successfully")
+print("Number of samples:", iris.data.shape[0])
+print("Number of features:", iris.data.shape[1])
+print("Classes:", iris.target_names)
+
+df = pd.DataFrame(iris.data, columns=iris.feature_names)
+df["Target"] = iris.target
+df["Species"] = df["Target"].map(dict(enumerate(iris.target_names)))
+display(df.head())
+print("\nDataset Shape:", df.shape)
+
+X = iris.data
+y = iris.target
+print("Features (X):")
+print(X[:5])
+print("\nTarget (y):")
+print(y[:5])
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.30,
+    random_state=42,
+    stratify=y
+)
+print("Training samples:", X_train.shape[0])
+print("Testing samples:", X_test.shape[0])
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+print("Feature scaling completed.")
+
+linear_svm = SVC(kernel="linear")
+linear_svm.fit(X_train_scaled, y_train)
+linear_pred = linear_svm.predict(X_test_scaled)
+print("Linear SVM training completed.")
+
+linear_accuracy = accuracy_score(y_test, linear_pred)
+linear_precision = precision_score(y_test, linear_pred, average="weighted")
+linear_recall = recall_score(y_test, linear_pred, average="weighted")
+linear_f1 = f1_score(y_test, linear_pred, average="weighted")
+
+print("LINEAR SVM PERFORMANCE")
+print("----------------------")
+print("Accuracy :", linear_accuracy)
+print("Precision:", linear_precision)
+print("Recall   :", linear_recall)
+print("F1 Score :", linear_f1)
+print("\nClassification Report:")
+print(classification_report(
+    y_test,
+    linear_pred,
+    target_names=iris.target_names
+))
+
+print("Linear SVM Confusion Matrix:")
+print(confusion_matrix(y_test, linear_pred))
+
+rbf_svm = SVC(kernel="rbf")
+rbf_svm.fit(X_train_scaled, y_train)
+rbf_pred = rbf_svm.predict(X_test_scaled)
+print("RBF SVM training completed.")
+
+rbf_accuracy = accuracy_score(y_test, rbf_pred)
+rbf_precision = precision_score(y_test, rbf_pred, average="weighted")
+rbf_recall = recall_score(y_test, rbf_pred, average="weighted")
+rbf_f1 = f1_score(y_test, rbf_pred, average="weighted")
+
+print("RBF SVM PERFORMANCE")
+print("-------------------")
+print("Accuracy :", rbf_accuracy)
+print("Precision:", rbf_precision)
+print("Recall   :", rbf_recall)
+print("F1 Score :", rbf_f1)
+print("\nClassification Report:")
+print(classification_report(
+    y_test,
+    rbf_pred,
+    target_names=iris.target_names
+))
+
+print("RBF SVM Confusion Matrix:")
+print(confusion_matrix(y_test, rbf_pred))
+
+comparison = pd.DataFrame({
+    "Classifier": ["Linear SVM", "RBF SVM"],
+    "Accuracy": [linear_accuracy, rbf_accuracy],
+    "Precision": [linear_precision, rbf_precision],
+    "Recall": [linear_recall, rbf_recall],
+    "F1 Score": [linear_f1, rbf_f1]
+})
+display(comparison)
+
+comparison_percentage = comparison.copy()
+metrics = ["Accuracy", "Precision", "Recall", "F1 Score"]
+for metric in metrics:
+    comparison_percentage[metric] = (
+        comparison_percentage[metric] * 100
+    ).round(2)
+print("SVM Classification Performance (%)")
+display(comparison_percentage)
+
+best_model = comparison.loc[comparison["F1 Score"].idxmax()]
+print("Best Performing Classifier:")
+print(best_model["Classifier"])
+print("\nBest F1 Score:", round(best_model["F1 Score"], 4))
+print("Best Accuracy:", round(best_model["Accuracy"], 4))
+
+print("========== LINEAR SVM ==========")
+print(confusion_matrix(y_test, linear_pred))
+print("\n========== RBF SVM ==========")
+print(confusion_matrix(y_test, rbf_pred))
+
+if rbf_f1 > linear_f1:
+    print("Conclusion: RBF SVM performed better than Linear SVM based on the F1 Score.")
+elif linear_f1 > rbf_f1:
+    print("Conclusion: Linear SVM performed better than RBF SVM based on the F1 Score.")
+else:
+    print("Conclusion: Both SVM classifiers achieved the same F1 Score.")

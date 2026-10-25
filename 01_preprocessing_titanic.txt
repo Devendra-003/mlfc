@@ -1,0 +1,39 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+df = pd.read_csv(r"C:\Users\AI32\Downloads\Titanic.csv")
+
+print("Original Dataset:")
+print(df.head())
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+df['Age'].fillna(df['Age'].mean(), inplace=True)
+df['Fare'].fillna(df['Fare'].mean(), inplace=True)
+
+df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+
+if 'Cabin' in df.columns:
+    df.drop('Cabin', axis=1, inplace=True)
+
+encoder = LabelEncoder()
+
+categorical_columns = ['Sex', 'Embarked']
+
+for col in categorical_columns:
+    df[col] = encoder.fit_transform(df[col])
+
+scaler = StandardScaler()
+
+feature_columns = ['Age', 'Fare', 'SibSp', 'Parch']
+
+df[feature_columns] = scaler.fit_transform(df[feature_columns])
+
+print("\nProcessed Dataset:")
+print(df.head())
+
+df.to_csv("titanic_cleaned.csv", index=False)
+
+print("\nFeature engineering completed successfully.")

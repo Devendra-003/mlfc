@@ -1,0 +1,148 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+
+df = pd.read_csv(r"C:\Users\AI32\Downloads\Wine.csv")
+
+print("First Five Records:")
+print(df.head())
+
+print("\nDataset Shape:")
+print(df.shape)
+
+print("\nColumn Name:")
+print(df.columns)
+
+print("\nDataset Information:")
+print(df.info())
+
+print("\nStatistical Summary:")
+print(df.describe())
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+x = df.drop("Customer_Segment", axis=1)
+y = df["Customer_Segment"]
+print("\nNumber of Input Features:", x.shape[1])
+
+print("\nClasses:", y.nunique())
+print("\nClasses:")
+print(y.unique())
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, stratify=y)
+
+scaler = StandardScaler()
+x_train_scaled = scaler.fit_transform(x_train)
+x_test_scaled = scaler.fit_transform(x_test)
+
+print("MODEL USING ORIGINAL FEATURES")
+
+model_original = LogisticRegression(max_iter=1000)
+model_original.fit(x_train_scaled, y_train)
+y_pred_original = model_original.predict(x_test_scaled)
+accuracy_original = accuracy_score(y_test, y_pred_original)
+
+print("\nNumber of Original Features:", x_train_scaled.shape[1])
+print("Accuracy:", accuracy_original)
+
+print("DIMENSIONALITY REDUCTION USING PCA")
+
+pca = PCA(n_components=2)
+x_train_pca = pca.fit_transform(x_train_scaled)
+x_test_pca = pca.fit_transform(x_test_scaled)
+
+print("\nOriginal Number of Features:", x_train_scaled.shape[1])
+print("Number of PCA Components:", x_train_pca.shape[1])
+
+print("\nVariance Explained by Each Component:")
+print(pca.explained_variance_ratio_)
+print("\nTotal Variance Explained:")
+print(sum(pca.explained_variance_ratio_))
+
+model_pca = LogisticRegression(max_iter=1000)
+model_pca.fit(x_train_pca, y_train)
+y_pred_pca = model_pca.predict(x_test_pca)
+
+accuracy_pca = accuracy_score(y_test, y_pred_pca)
+print("\nAccuracy using PCA:", accuracy_pca)
+
+lda = LinearDiscriminantAnalysis(n_components=2)
+x_train_lda = lda.fit_transform(x_train_scaled, y_train)
+x_test_lda = lda.transform(x_test_scaled)
+
+print("\nOriginal Number of Features:", x_train_scaled.shape[1])
+print("Number of LDA Components:", x_train_lda.shape[1])
+
+model_lda = LogisticRegression(max_iter=1000)
+model_lda.fit(x_train_lda, y_train)
+y_pred_lda = model_lda.predict(x_test_lda)
+
+accuracy_lda = accuracy_score(y_test, y_pred_lda)
+print("\nAccuracy using LDA:", accuracy_lda)
+
+results = pd.DataFrame({
+    "Method": [
+        "Original Features",
+        "PCA",
+        "LDA"
+    ],
+    "Number of Features": [
+        x_train_scaled.shape[1],
+        x_train_pca.shape[1],
+        x_train_lda.shape[1]
+    ],
+    "Accuracy": [
+        accuracy_original,
+        accuracy_pca,
+        accuracy_lda
+    ]
+})
+
+print(results)
+
+plt.figure(figsize=(8, 6))
+
+plt.scatter(
+    x_test_pca[:, 0],
+    x_test_pca[:, 1],
+    c=y_test,
+    alpha=0.7
+)
+
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.title("Wine Dataset after PCA")
+plt.colorbar(
+    label="Customer Segment"
+)
+
+plt.show()
+
+print(
+    classification_report(
+        y_test,
+        y_pred_original
+    )
+)
+
+print(
+    classification_report(
+        y_test,
+        y_pred_pca
+    )
+)
+
+print(
+    classification_report(
+        y_test,
+        y_pred_lda
+    )
+)

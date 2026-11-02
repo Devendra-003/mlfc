@@ -1,0 +1,109 @@
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+data = pd.read_csv("Mall_Customers.csv")
+data.columns = data.columns.str.strip()
+print("First 5 rows of the dataset:")
+print(data.head())
+print("\nColumn names:")
+print(data.columns.tolist())
+
+required_columns = ['Annual Income (k$)', 'Spending Score (1-100)']
+missing_columns = [col for col in required_columns if col not in data.columns]
+if missing_columns:
+    raise ValueError(
+        f"Missing required column(s): {missing_columns}. "
+        f"Available columns: {data.columns.tolist()}"
+    )
+
+X = data[required_columns].dropna().values
+print("\nSelected Features:")
+print(X[:5])
+
+wcss = []
+for k in range(1, 11):
+    model = KMeans(
+        n_clusters=k,
+        random_state=42,
+        n_init=10
+    )
+    model.fit(X)
+    wcss.append(model.inertia_)
+
+plt.figure(figsize=(7, 5))
+plt.plot(
+    range(1, 11),
+    wcss,
+    marker='o'
+)
+plt.title("Elbow Method - Mall Customers")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("WCSS")
+plt.grid(True)
+plt.show()
+
+print("Silhouette Scores")
+silhouette_scores = []
+for k in range(2, 11):
+    model = KMeans(
+        n_clusters=k,
+        random_state=42,
+        n_init=10
+    )
+    labels = model.fit_predict(X)
+    score = silhouette_score(X, labels)
+    silhouette_scores.append(score)
+    print("K =", k, " Score =", round(score, 3))
+
+plt.figure(figsize=(7, 5))
+plt.plot(
+    range(2, 11),
+    silhouette_scores,
+    marker='o'
+)
+plt.title("Silhouette Score - Mall Customers")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("Silhouette Score")
+plt.grid(True)
+plt.show()
+
+kmeans = KMeans(
+    n_clusters=5,
+    random_state=42,
+    n_init=10
+)
+
+clusters = kmeans.fit_predict(X)
+
+data['Cluster'] = clusters
+print("\nClustered Dataset:")
+print(data.head(10))
+
+print("\nNumber of Customers in Each Cluster:")
+print(data['Cluster'].value_counts().sort_index())
+
+plt.figure(figsize=(8, 6))
+plt.scatter(
+    X[:, 0],
+    X[:, 1],
+    c=clusters,
+    s=50
+)
+plt.scatter(
+    kmeans.cluster_centers_[:, 0],
+    kmeans.cluster_centers_[:, 1],
+    marker='X',
+    s=200,
+    label='Centroids'
+)
+plt.title("K-Means Clustering - Mall Customers")
+plt.xlabel("Annual Income (k$)")
+plt.ylabel("Spending Score (1-100)")
+plt.legend()
+plt.grid(True)
+plt.show()
